@@ -1,5 +1,5 @@
 ---
-title: "Machine Learning on US presidential election of 2016"
+title: "Time Series Analysis & Forecasting"
 author: '[Leonard Henriquez](https://github.com/leonard-henriquez/), Adrien Lequiller & Eddy Ohayon'
 date: "`r Sys.Date()`"
 output: pdf_document
@@ -100,6 +100,10 @@ pacf(y3)
 ```{r}
 acf(y4)
 pacf(y4)
+
+#MA(1)
+#AR(++)
+#go first on ARMA(1,1)
 ```
 
 ```{r}
@@ -130,5 +134,125 @@ plot(TOTALNSA.ts,xlim=c(2000,2019))
 lines(point.forecast,col="red")
 lines(lower,col="blue")
 lines(upper,col="blue")
+```
+
+
+```{r}
+#winddow : remoe the crisis - we have enough data
+TOTALNSA.ts.2=window(TOTALNSA.ts,start=c(2010,1)) 
+plot(TOTALNSA.ts.2)
+```
+
+```{r}
+monthplot(TOTALNSA.ts.2)
+#still clearly seasonlity
+```
+
+```{r}
+y1.2=diff(TOTALNSA.ts.2,lag=12)
+plot(y1.2)
+```
+
+```{r}
+y2.2=diff(diff(log(TOTALNSA.ts.2),lag=12))
+plot(y2.2)
+#stationnary 
+```
+
+```{r}
+acf(y2.2)
+pacf(y2.2)
+```
+
+```{r}
+model1.2<- arima(log(TOTALNSA.ts.2), order = c(0,1,1),seasonal=c(0,1,0))
+model1.2
+acf(model1.2$residuals) 
+Box.test(model1.2$residuals, lag = 15, type="Ljung-Box")
+##MA(1)
+```
+
+```{r}
+model2.2<- arima(log(TOTALNSA.ts.2), order = c(1,1,1),seasonal=c(0,1,0))
+model2.2
+acf(model2.2$residuals) 
+Box.test(model2.2$residuals, lag = 15, type="Ljung-Box")
+#works also
+```
+
+```{r}
+model3.2<- arima(log(TOTALNSA.ts.2), order = c(0,1,2),seasonal=c(0,1,0))
+model3.2
+acf(model3.2$residuals) 
+Box.test(model3.2$residuals, lag = 15, type="Ljung-Box")
+#il vaut mieux garder une AR(1) aussi du coup
+```
+
+```{r}
+model4.2<- arima(log(TOTALNSA.ts.2), order = c(1,1,2),seasonal=c(0,1,0))
+model4.2
+acf(model4.2$residuals) 
+Box.test(model4.2$residuals, lag = 15, type="Ljung-Box")
+```
+
+```{r}
+AIC(model1.2) 
+AIC(model2.2)
+# model 1 is better according to AIC
+BIC(model1.2) 
+BIC(model2.2)
+#model 1 is better
+
+##AIC and BIC take the model complexity in account 
+```
+
+```{r}
+y<-log(TOTALNSA.ts.2)
+S=round(0.75*length(y))
+h=1
+error1.h<-c()
+for (i in S:(length(y)-h))
+{
+  mymodel.sub<-arima(y[1:i], order = c(0,1,1),seasonal = c(0,1,0))
+# mymodel.sub<-arima(y[(i-S+1):i], order = c(3,1,0)) moving window
+  predict.h<-predict(mymodel.sub,n.ahead=h)$pred[h]
+  error1.h<-c(error1.h,y[i+h]-predict.h)
+}
+
+error2.h<-c()
+for (i in S:(length(y)-h))
+{
+  mymodel.sub<-arima(y[1:i], order = c(1,1,1),seasonal=c(0,1,0))
+  predict.h<-predict(mymodel.sub,n.ahead=h)$pred[h]
+  error2.h<-c(error2.h,y[i+h]-predict.h)
+}
+
+boxplot(error1.h,error2.h)
+```
+
+```{r}
+MAE1<-mean(abs(error1.h));MAE1
+MAE2<-mean(abs(error2.h));MAE2
+# Model 1 has a smaller Mean Absolute Error
+MSE1<-mean(abs(error1.h)^2);MSE1
+MSE2<-mean(abs(error2.h)^2);MSE2
+```
+
+```{r}
+library(forecast)
+dm.test(error1.h,error2.h,h=h,power=1) 
+# no significant difference between MAE1 and MAE2
+dm.test(error1.h,error2.h,h=h,power=2) 
+# no significant difference between MSE1 and MSE2
+
+## A possibility would be to work with both and AVERAGE!
+
+#let's do MAPE
+rerror1.h=error1.h/y[(S+h):length(y)]
+rerror2.h=error2.h/y[(S+h):length(y)]
+
+MAPE1=mean(abs(rerror1.h));MAPE1
+MAPE2=mean(abs(rerror2.h));MAPE2
+dm.test(rerror1.h,rerror2.h,h=h,power=1) 
 ```
 
