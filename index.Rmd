@@ -22,7 +22,7 @@ seed <- 31
 
 ```{r include=FALSE}
 title  <- "Total Vehicle Sales in thousands of units over months"
-x.axis <- "Months"
+x.axis <- "Time (in months)"
 y.axis <- "Total Vehicle Sales (in thousands of units)"
 ```
 
@@ -37,6 +37,22 @@ plot.serie <- function(ts) {
   div(plot, align = "center")
 }
 ```
+
+```{r include=FALSE}
+plot.serie.m <- function(ts, value=20) {
+  rmean = stats::filter(ts, rep(1/value, value), side=2)
+  df <- data.frame(date=as.Date(as.yearmon(time(ts))), values = melt(ts)$value, mean=rmean)
+
+  plot <- plot_ly(df, x=~date) %>%
+  add_trace(y = ~values, mode = 'lines', name = "US car sales") %>%
+  add_trace(y = ~mean, mode = 'lines', name = "trend") %>%
+  layout(title = title,
+       xaxis = list(title = x.axis),
+       yaxis = list(title = y.axis))
+  div(plot, align = "center")
+}
+```
+
 
 ```{r include=FALSE}
 monthplot.serie <- function(ts) {
@@ -62,7 +78,7 @@ monthplot.serie <- function(ts) {
 ```
 
 ```{r include=FALSE}
-plot.forecast <- function(ts, forecast) {
+plot.forecast <- function(ts, forecast, exp=FALSE) {
   alpha.1 <- 0.05
   alpha.2 <- 0.20
   
@@ -75,11 +91,18 @@ plot.forecast <- function(ts, forecast) {
   colnames(first.row)[2] <- "values.pred"
   df.forecast <- rbind(first.row, df.forecast)
   se <- c(0, se)
-  
-  df.forecast$upper.1 <- df.forecast$values.pred + qnorm(1-alpha.1/2) * se
-  df.forecast$upper.2 <- df.forecast$values.pred + qnorm(1-alpha.2/2) * se
-  df.forecast$lower.1 <- df.forecast$values.pred - qnorm(1-alpha.1/2) * se
-  df.forecast$lower.2 <- df.forecast$values.pred - qnorm(1-alpha.2/2) * se
+
+  if(exp==TRUE) {
+    df.forecast$upper.1 <- exp(df.forecast$values.pred + qnorm(1-alpha.1/2) * se)
+    df.forecast$upper.2 <- exp(df.forecast$values.pred + qnorm(1-alpha.2/2) * se)
+    df.forecast$lower.1 <- exp(df.forecast$values.pred - qnorm(1-alpha.1/2) * se)
+    df.forecast$lower.2 <- exp(df.forecast$values.pred - qnorm(1-alpha.2/2) * se)
+  } else {
+    df.forecast$upper.1 <- df.forecast$values.pred + qnorm(1-alpha.1/2) * se
+    df.forecast$upper.2 <- df.forecast$values.pred + qnorm(1-alpha.2/2) * se
+    df.forecast$lower.1 <- df.forecast$values.pred - qnorm(1-alpha.1/2) * se
+    df.forecast$lower.2 <- df.forecast$values.pred - qnorm(1-alpha.2/2) * se 
+  }
   
   new.df <- merge(x = df, y = df.forecast, by = "date", all = TRUE)
   
@@ -133,6 +156,11 @@ plot.serie(TOTALNSA.ts)
 
 #there is clear growing trend but with period of crisis
 ```
+
+```{r}
+plot.serie.m(TOTALNSA.ts, 50)
+```
+
 ```{r}
 monthplot.serie(TOTALNSA.ts)
 ```
@@ -194,11 +222,7 @@ Box.test(model2$residuals, lag = 15, type="Ljung-Box")
 ```
 
 ```{r}
-myforecast<-predict(model2,n.ahead=50)
-point.forecast<-myforecast$pred
-SE<-myforecast$se
-lower<-point.forecast-qnorm(0.975)*SE
-upper<-point.forecast+qnorm(0.975)*SE
+myforecast<-predict(model2,n.ahead=12)
 plot.forecast(TOTALNSA.ts, myforecast)
 ```
 
@@ -206,6 +230,9 @@ plot.forecast(TOTALNSA.ts, myforecast)
 # We make a subset of the data
 TOTALNSA.ts2 <- window(TOTALNSA.ts,start=c(2010,1))
 plot.serie(TOTALNSA.ts2)
+```
+```{r}
+plot.serie.m(TOTALNSA.ts2, 20)
 ```
 
 
@@ -233,6 +260,7 @@ pacf.gg(y2.2)
 ```{r}
 model1.2<- arima(log(TOTALNSA.ts2), order = c(0,1,1),seasonal=c(0,1,0))
 model1.2
+acf(model1.2$residuals)
 acf.gg(model1.2$residuals)
 Box.test(model1.2$residuals, lag = 15, type="Ljung-Box")
 ##MA(1)
@@ -335,10 +363,6 @@ Box.test(model$residuals, lag = 15, type="Ljung-Box")
 ```
 
 ```{r}
-myforecast<-predict(model,n.ahead=12)
-point.forecast<-myforecast$pred
-SE<-myforecast$se
-lower<-point.forecast-qnorm(0.975)*SE
-upper<-point.forecast+qnorm(0.975)*SE
-plot.serie(TOTALNSA.ts2)
+myforecast<-predict(model,n.ahead=12, exp=TRUE)
+plot.forecast(TOTALNSA.ts2, myforecast)
 ```
