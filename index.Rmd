@@ -59,7 +59,7 @@ monthplot.serie <- function(ts) {
   df <- data.frame(date=as.Date(as.yearmon(time(ts))), values = melt(ts)$value)
   df$month <- factor(month(df$date), levels=1:12, labels=month.abb, ordered=TRUE)
   df$year  <- year(df$date)
-  
+
 
   hline.data <- ddply(df, .(month), summarize, avgvalue=mean(values))
   head(hline.data)
@@ -81,31 +81,36 @@ monthplot.serie <- function(ts) {
 plot.forecast <- function(ts, forecast, exp=FALSE) {
   alpha.1 <- 0.05
   alpha.2 <- 0.20
-  
+
   pred        <- forecast$pred
   se          <- forecast$se
   df          <- data.frame(date=as.Date(as.yearmon(time(ts))), values.obs = melt(ts)$value)
-  df.forecast <- data.frame(date=as.Date(as.yearmon(time(pred))), values.pred = melt(pred)$value)
   
+  if(exp==TRUE) {
+    df.forecast <- data.frame(date=as.Date(as.yearmon(time(pred))), values.pred = exp(melt(pred)$value))
+  } else {
+    df.forecast <- data.frame(date=as.Date(as.yearmon(time(pred))), values.pred = melt(pred)$value)
+  }
+    
   first.row <- df[nrow(df),]
   colnames(first.row)[2] <- "values.pred"
   df.forecast <- rbind(first.row, df.forecast)
   se <- c(0, se)
 
   if(exp==TRUE) {
-    df.forecast$upper.1 <- exp(df.forecast$values.pred + qnorm(1-alpha.1/2) * se)
-    df.forecast$upper.2 <- exp(df.forecast$values.pred + qnorm(1-alpha.2/2) * se)
-    df.forecast$lower.1 <- exp(df.forecast$values.pred - qnorm(1-alpha.1/2) * se)
-    df.forecast$lower.2 <- exp(df.forecast$values.pred - qnorm(1-alpha.2/2) * se)
+    df.forecast$upper.1 <- exp(log(df.forecast$values.pred) + qnorm(1-alpha.1/2) * se)
+    df.forecast$upper.2 <- exp(log(df.forecast$values.pred) + qnorm(1-alpha.2/2) * se)
+    df.forecast$lower.1 <- exp(log(df.forecast$values.pred) - qnorm(1-alpha.1/2) * se)
+    df.forecast$lower.2 <- exp(log(df.forecast$values.pred) - qnorm(1-alpha.2/2) * se)
   } else {
     df.forecast$upper.1 <- df.forecast$values.pred + qnorm(1-alpha.1/2) * se
     df.forecast$upper.2 <- df.forecast$values.pred + qnorm(1-alpha.2/2) * se
     df.forecast$lower.1 <- df.forecast$values.pred - qnorm(1-alpha.1/2) * se
-    df.forecast$lower.2 <- df.forecast$values.pred - qnorm(1-alpha.2/2) * se 
+    df.forecast$lower.2 <- df.forecast$values.pred - qnorm(1-alpha.2/2) * se
   }
-  
+
   new.df <- merge(x = df, y = df.forecast, by = "date", all = TRUE)
-  
+
   plot <- plot_ly(new.df) %>%
   layout(title = title,
        xaxis = list(title = x.axis),
@@ -124,12 +129,12 @@ plot.forecast <- function(ts, forecast, exp=FALSE) {
 acf.gg <- function(ts, max=30) {
   val.acf <- acf(ts, lag=max, plot=FALSE)
   df.acf  <- data.frame(lag= 0:max, acf = val.acf$acf)
-  
-  ggplot(df.acf, aes(lag, acf)) + 
-    geom_bar(stat="identity", fill="#1F77B4") + 
+
+  ggplot(df.acf, aes(lag, acf)) +
+    geom_bar(stat="identity", fill="#1F77B4") +
     geom_hline(yintercept = qnorm(1-0.05/2)/sqrt(length(ts)), color="orange", linetype="dashed") +
     geom_hline(yintercept = -qnorm(1-0.05/2)/sqrt(length(ts)), color="orange", linetype="dashed") +
-    theme_classic() 
+    theme_classic()
 }
 ```
 
@@ -137,12 +142,12 @@ acf.gg <- function(ts, max=30) {
 pacf.gg <- function(ts, max=30) {
   val.pacf <- pacf(ts, lag=max, plot=FALSE)
   df.pacf  <- data.frame(lag= 1:max, pacf = val.pacf$acf)
-  
-  ggplot(df.pacf, aes(lag, pacf)) + 
-    geom_bar(stat="identity", fill="#1F77B4") + 
+
+  ggplot(df.pacf, aes(lag, pacf)) +
+    geom_bar(stat="identity", fill="#1F77B4") +
     geom_hline(yintercept = qnorm(1-0.05/2)/sqrt(length(ts)), color="orange", linetype="dashed") +
     geom_hline(yintercept = -qnorm(1-0.05/2)/sqrt(length(ts)), color="orange", linetype="dashed") +
-    theme_classic() 
+    theme_classic()
 }
 ```
 
@@ -167,148 +172,129 @@ monthplot.serie(TOTALNSA.ts)
 
 
 ```{r}
-y1= diff(TOTALNSA.ts,lag=12)
-plot.serie(y1)
-#mauvais
+#winddow : remoe the crisis - we have enough data
+TOTALNSA.ts.2=window(TOTALNSA.ts,start=c(2010,1))
+plot.serie(TOTALNSA.ts.2)
 ```
 
 ```{r}
-y2 = diff(log(TOTALNSA.ts),lag=12)
-plot.serie(y2)
-#mauvais
-```
-
-```{r}
-y3=diff(TOTALNSA.ts)
-plot.serie(y3)
-#pas mal
-```
-
-```{r}
-y4=diff(diff(TOTALNSA.ts,lag=12))
-plot.serie(y4)
-#pas mal aussi
-```
-
-```{r}
-acf.gg(y3)
-pacf.gg(y3)
-```
-
-```{r}
-acf.gg(y4)
-pacf.gg(y4)
-
-#MA(1)
-#AR(++)
-#go first on ARMA(1,1)
-```
-
-```{r}
-model1<- arima(TOTALNSA.ts, order = c(0,1,1),seasonal=c(0,1,0))
-model1
-acf.gg(model1$residuals)
-Box.test(model1$residuals, lag = 15, type="Ljung-Box")
-#fonctionne pas
-```
-
-```{r}
-model2 <- arima(TOTALNSA.ts, order = c(2,1,2),seasonal=c(2,1,2))
-model2
-acf.gg(model2$residuals)
-Box.test(model2$residuals, lag = 15, type="Ljung-Box")
-
-#semble etre le plus court et le meilleur apres plusieurs tests
-```
-
-```{r}
-myforecast<-predict(model2,n.ahead=12)
-plot.forecast(TOTALNSA.ts, myforecast)
-```
-
-```{r}
-# We make a subset of the data
-TOTALNSA.ts2 <- window(TOTALNSA.ts,start=c(2010,1))
-plot.serie(TOTALNSA.ts2)
-```
-```{r}
-plot.serie.m(TOTALNSA.ts2, 20)
-```
-
-
-```{r}
-monthplot.serie(TOTALNSA.ts2)
+monthplot(TOTALNSA.ts.2)
 #still clearly seasonlity
 ```
 
 ```{r}
-y1.2=diff(TOTALNSA.ts2,lag=12)
-plot.serie(y1.2)
+y1=diff(TOTALNSA.ts.2,lag=12)
+plot.serie(y1)
 ```
 
 ```{r}
-y2.2=diff(diff(log(TOTALNSA.ts2),lag=12))
-plot.serie(y2.2)
+y2=diff(diff(log(TOTALNSA.ts.2),lag=12))
+plot.serie(y2)
 #stationnary
 ```
 
 ```{r}
-acf.gg(y2.2)
-pacf.gg(y2.2)
+acf.gg(y2)
+pacf.gg(y2)
 ```
 
 ```{r}
-model1.2<- arima(log(TOTALNSA.ts2), order = c(0,1,1),seasonal=c(0,1,0))
-model1.2
-acf(model1.2$residuals)
-acf.gg(model1.2$residuals)
-Box.test(model1.2$residuals, lag = 15, type="Ljung-Box")
+model1<- arima(log(TOTALNSA.ts.2), order = c(0,1,1),seasonal=c(0,1,0))
+model1
+acf.gg(model1$residuals)
+Box.test(model1$residuals, lag = 15, type="Ljung-Box")
 ##MA(1)
 ```
 
 ```{r}
-model2.2<- arima(log(TOTALNSA.ts2), order = c(1,1,1),seasonal=c(0,1,0))
-model2.2
-acf.gg(model2.2$residuals)
-Box.test(model2.2$residuals, lag = 15, type="Ljung-Box")
+model2<- arima(log(TOTALNSA.ts.2), order = c(1,1,1),seasonal=c(0,1,0))
+model2
+acf.gg(model2$residuals)
+Box.test(model2$residuals, lag = 15, type="Ljung-Box")
 #works also
 ```
 
 ```{r}
-model3.2<- arima(log(TOTALNSA.ts2), order = c(0,1,2),seasonal=c(0,1,0))
-model3.2
-acf.gg(model3.2$residuals)
-Box.test(model3.2$residuals, lag = 15, type="Ljung-Box")
+model3<- arima(log(TOTALNSA.ts.2), order = c(0,1,2),seasonal=c(0,1,0))
+model3
+acf.gg(model3$residuals)
+Box.test(model3$residuals, lag = 15, type="Ljung-Box")
 #il vaut mieux garder une AR(1) aussi du coup
 ```
 
 ```{r}
-model4.2<- arima(log(TOTALNSA.ts2), order = c(1,1,2),seasonal=c(0,1,0))
-model4.2
-acf.gg(model4.2$residuals)
-Box.test(model4.2$residuals, lag = 15, type="Ljung-Box")
+model4<- arima(log(TOTALNSA.ts.2), order = c(1,1,2),seasonal=c(0,1,0))
+model4
+acf.gg(model4$residuals)
+Box.test(model4$residuals, lag = 15, type="Ljung-Box")
 ```
 
+
 ```{r}
-AIC(model1.2)
-AIC(model2.2)
+cbind(AIC(model1), AIC(model2), AIC(model3),AIC(model4))
 # model 1 is better according to AIC
-BIC(model1.2)
-BIC(model2.2)
+cbind(BIC(model1), BIC(model2), BIC(model3),BIC(model4))
 #model 1 is better
 
 ##AIC and BIC take the model complexity in account
 ```
 
+We are going to compare Model 1 and 2 !
+Model 1 seems to be better for both AIC and BIC
+
+- IN SAMPLE TEST
+
 ```{r}
-y<-log(TOTALNSA.ts2)
-S=round(0.75*length(y))
-h=1
+y=log(TOTALNSA.ts.2)
+error1<-c()
+for (i in 14:(length(y)-1))
+{
+  mymodel<-arima(y[1:i], order = c(0,1,1),seasonal=c(0,1,0))
+  predict<-predict(mymodel,n.ahead=1)
+  error1<-c(error1,y[i+1]-predict$pred)
+}
+
+error2<-c()
+for (i in 14:(length(y)-1))
+{
+  mymodel<-arima(y[1:i], order = c(1,1,1),seasonal=c(0,1,0))
+  predict<-predict(mymodel,n.ahead=1)
+  error2<-c(error2,y[i+1]-predict$pred)
+}
+
+boxplot(error1,error2)
+
+MAE1<-mean(abs(error1));MAE1
+MAE2<-mean(abs(error2));MAE2
+
+MSE1<-mean(abs(error1)^2);MSE1
+MSE2<-mean(abs(error2)^2);MSE2
+
+dm.test(error1,error2,h=1,power=1)
+dm.test(error1,error2,h=1,power=2)
+
+rerror1=error1/y[15:length(y)]
+rerror2=error2/y[15:length(y)]
+
+MAPE1=mean(abs(rerror1));MAPE1
+MAPE2=mean(abs(rerror2));MAPE2
+dm.test(rerror1,rerror2,h=1,power=1)
+dm.test(rerror1,rerror2,h=1,power=2)
+```
+
+
+- OUT OF SAMPLE TEST
+
+- Expanding Window
+
+```{r}
+y<-log(TOTALNSA.ts.2)
+S=round(0.7*length(y))
+h=5
 error1.h<-c()
 for (i in S:(length(y)-h))
 {
   mymodel.sub<-arima(y[1:i], order = c(0,1,1),seasonal = c(0,1,0))
-# mymodel.sub<-arima(y[(i-S+1):i], order = c(3,1,0)) moving window
   predict.h<-predict(mymodel.sub,n.ahead=h)$pred[h]
   error1.h<-c(error1.h,y[i+h]-predict.h)
 }
@@ -322,21 +308,63 @@ for (i in S:(length(y)-h))
 }
 
 boxplot(error1.h,error2.h)
-```
 
-```{r}
 MAE1<-mean(abs(error1.h));MAE1
 MAE2<-mean(abs(error2.h));MAE2
-# Model 1 has a smaller Mean Absolute Error
+
 MSE1<-mean(abs(error1.h)^2);MSE1
 MSE2<-mean(abs(error2.h)^2);MSE2
+
+dm.test(error1.h,error2.h,h=h,power=1)
+dm.test(error1.h,error2.h,h=h,power=2)
+
+
+## A possibility would be to work with both and AVERAGE!
+
+#let's do MAPE
+rerror1.h=error1.h/y[(S+h):length(y)]
+rerror2.h=error2.h/y[(S+h):length(y)]
+
+MAPE1=mean(abs(rerror1.h));MAPE1
+MAPE2=mean(abs(rerror2.h));MAPE2
+dm.test(rerror1.h,rerror2.h,h=h,power=1)
+dm.test(rerror1.h,rerror2.h,h=h,power=2)
 ```
 
+
+- Rowing Window
+
 ```{r}
+y<-log(TOTALNSA.ts.2)
+S=round(0.7*length(y))
+h=5
+error1.h<-c()
+for (i in S:(length(y)-h))
+{
+  mymodel.sub<-arima(y[(i-S+1):i], order = c(0,1,1),seasonal = c(0,1,0))
+  predict.h<-predict(mymodel.sub,n.ahead=h)$pred[h]
+  error1.h<-c(error1.h,y[i+h]-predict.h)
+}
+
+error2.h<-c()
+for (i in S:(length(y)-h))
+{
+  mymodel.sub<-arima(y[(i-S+1):i], order = c(1,1,1),seasonal=c(0,1,0))
+  predict.h<-predict(mymodel.sub,n.ahead=h)$pred[h]
+  error2.h<-c(error2.h,y[i+h]-predict.h)
+}
+
+boxplot(error1.h,error2.h)
+
+MAE1<-mean(abs(error1.h));MAE1
+MAE2<-mean(abs(error2.h));MAE2
+
+MSE1<-mean(abs(error1.h)^2);MSE1
+MSE2<-mean(abs(error2.h)^2);MSE2
+
 dm.test(error1.h,error2.h,h=h,power=1)
-# no significant difference between MAE1 and MAE2
 dm.test(error1.h,error2.h,h=h,power=2)
-# no significant difference between MSE1 and MSE2
+
 
 ## A possibility would be to work with both and AVERAGE!
 
@@ -363,6 +391,6 @@ Box.test(model$residuals, lag = 15, type="Ljung-Box")
 ```
 
 ```{r}
-myforecast<-predict(model,n.ahead=12, exp=TRUE)
-plot.forecast(TOTALNSA.ts2, myforecast)
+myforecast<-predict(model,n.ahead=12)
+plot.forecast(TOTALNSA.ts2, myforecast, exp=TRUE)
 ```
