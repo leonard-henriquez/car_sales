@@ -42,10 +42,11 @@ monthplot.serie <- function(df) {
   df$month <- factor(month(df$date), levels=1:12, labels=month.abb, ordered=TRUE)
   df$year  <- year(df$date)
   
+
   hline.data <- ddply(df, .(month), summarize, avgvalue=mean(values))
   head(hline.data)
-  
-  plot <- ggplot() + 
+
+  plot <- ggplot() +
     geom_line(aes(x=year, y=values, group=month), data=df) +
     geom_hline(aes(yintercept=avgvalue), data=hline.data) +
     facet_grid(~month) +
@@ -71,13 +72,13 @@ monthplot(TOTALNSA.ts)
 ```{r}
 y1= diff(TOTALNSA.ts,lag=12)
 plot(y1)
-#mauvais 
+#mauvais
 ```
 
 ```{r}
 y2= diff(log(TOTALNSA.ts),lag=12)
 plot(y2)
-#mauvais 
+#mauvais
 ```
 
 ```{r}
@@ -93,7 +94,7 @@ plot(y4)
 ```
 
 ```{r}
-acf(y3) 
+acf(y3)
 pacf(y3)
 ```
 
@@ -109,7 +110,7 @@ pacf(y4)
 ```{r}
 model1<- arima(TOTALNSA.ts, order = c(0,1,1),seasonal=c(0,1,0))
 model1
-acf(model1$residuals) 
+acf(model1$residuals)
 Box.test(model1$residuals, lag = 15, type="Ljung-Box")
 #fonctionne pas
 ```
@@ -117,7 +118,7 @@ Box.test(model1$residuals, lag = 15, type="Ljung-Box")
 ```{r}
 model2<- arima(TOTALNSA.ts, order = c(2,1,2),seasonal=c(2,1,2))
 model2
-acf(model2$residuals) 
+acf(model2$residuals)
 Box.test(model2$residuals, lag = 15, type="Ljung-Box")
 
 #semble etre le plus court et le meilleur apres plusieurs tests
@@ -136,12 +137,12 @@ lines(lower,col="blue")
 lines(upper,col="blue")
 ```
 
-
 ```{r}
-#winddow : remoe the crisis - we have enough data
-TOTALNSA.ts.2=window(TOTALNSA.ts,start=c(2010,1)) 
-plot(TOTALNSA.ts.2)
+# We make a subset of the data
+TOTALNSA.ts2 <- window(TOTALNSA.ts,start=c(2010,1))
+plot(TOTALNSA.ts2)
 ```
+
 
 ```{r}
 monthplot(TOTALNSA.ts.2)
@@ -156,7 +157,7 @@ plot(y1.2)
 ```{r}
 y2.2=diff(diff(log(TOTALNSA.ts.2),lag=12))
 plot(y2.2)
-#stationnary 
+#stationnary
 ```
 
 ```{r}
@@ -167,7 +168,7 @@ pacf(y2.2)
 ```{r}
 model1.2<- arima(log(TOTALNSA.ts.2), order = c(0,1,1),seasonal=c(0,1,0))
 model1.2
-acf(model1.2$residuals) 
+acf(model1.2$residuals)
 Box.test(model1.2$residuals, lag = 15, type="Ljung-Box")
 ##MA(1)
 ```
@@ -175,7 +176,7 @@ Box.test(model1.2$residuals, lag = 15, type="Ljung-Box")
 ```{r}
 model2.2<- arima(log(TOTALNSA.ts.2), order = c(1,1,1),seasonal=c(0,1,0))
 model2.2
-acf(model2.2$residuals) 
+acf(model2.2$residuals)
 Box.test(model2.2$residuals, lag = 15, type="Ljung-Box")
 #works also
 ```
@@ -183,7 +184,7 @@ Box.test(model2.2$residuals, lag = 15, type="Ljung-Box")
 ```{r}
 model3.2<- arima(log(TOTALNSA.ts.2), order = c(0,1,2),seasonal=c(0,1,0))
 model3.2
-acf(model3.2$residuals) 
+acf(model3.2$residuals)
 Box.test(model3.2$residuals, lag = 15, type="Ljung-Box")
 #il vaut mieux garder une AR(1) aussi du coup
 ```
@@ -191,19 +192,19 @@ Box.test(model3.2$residuals, lag = 15, type="Ljung-Box")
 ```{r}
 model4.2<- arima(log(TOTALNSA.ts.2), order = c(1,1,2),seasonal=c(0,1,0))
 model4.2
-acf(model4.2$residuals) 
+acf(model4.2$residuals)
 Box.test(model4.2$residuals, lag = 15, type="Ljung-Box")
 ```
 
 ```{r}
-AIC(model1.2) 
+AIC(model1.2)
 AIC(model2.2)
 # model 1 is better according to AIC
-BIC(model1.2) 
+BIC(model1.2)
 BIC(model2.2)
 #model 1 is better
 
-##AIC and BIC take the model complexity in account 
+##AIC and BIC take the model complexity in account
 ```
 
 ```{r}
@@ -240,9 +241,9 @@ MSE2<-mean(abs(error2.h)^2);MSE2
 
 ```{r}
 library(forecast)
-dm.test(error1.h,error2.h,h=h,power=1) 
+dm.test(error1.h,error2.h,h=h,power=1)
 # no significant difference between MAE1 and MAE2
-dm.test(error1.h,error2.h,h=h,power=2) 
+dm.test(error1.h,error2.h,h=h,power=2)
 # no significant difference between MSE1 and MSE2
 
 ## A possibility would be to work with both and AVERAGE!
@@ -253,6 +254,34 @@ rerror2.h=error2.h/y[(S+h):length(y)]
 
 MAPE1=mean(abs(rerror1.h));MAPE1
 MAPE2=mean(abs(rerror2.h));MAPE2
-dm.test(rerror1.h,rerror2.h,h=h,power=1) 
+dm.test(rerror1.h,rerror2.h,h=h,power=1)
 ```
 
+
+```{r}
+plot(diff(diff(log(TOTALNSA.ts2)),lag=12))
+# Looks stationary
+```
+
+
+
+```{r}
+# We make a SARIMA(0,1,1)(0,1,0) on the subset data
+model<- arima(log(TOTALNSA.ts2), order = c(0,1,1),seasonal=c(0,1,0))
+model
+acf(model$residuals)
+Box.test(model$residuals, lag = 15, type="Ljung-Box")
+```
+
+```{r}
+myforecast<-predict(model,n.ahead=12)
+point.forecast<-myforecast$pred
+SE<-myforecast$se
+lower<-point.forecast-qnorm(0.975)*SE
+upper<-point.forecast+qnorm(0.975)*SE
+plot(TOTALNSA.ts2,xlim=c(2010,2021),ylim=c(800,1850))
+# we adjust the scale of the axes to get a nicer plot
+lines(exp(point.forecast),col="red")
+lines(exp(lower),col="blue")
+lines(exp(upper),col="blue")
+```
