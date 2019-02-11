@@ -1,6 +1,6 @@
 ---
 title: "Time Series Analysis & Forecasting"
-author: '[Leonard Henriquez](https://github.com/leonard-henriquez/), Adrien Lequiller & Eddy Ohayon'
+author: '[Leonard Henriquez](https://github.com/leonard-henriquez/), [Adrien Lequiller](https://github.com/adrienlequiller) & [Eddy Ohayon](https://github.com/Eddoha55)'
 date: "`r Sys.Date()`"
 output: pdf_document
 always_allow_html: yes
@@ -9,34 +9,36 @@ always_allow_html: yes
 The full repository (including dataset) is available [here](https://github.com/leonard-henriquez/car_sales)
 
 ```{r message=FALSE, warning=FALSE, include=FALSE}
-knitr::opts_chunk$set(cache = TRUE, warning=FALSE)
+knitr::opts_chunk$set(cache = TRUE, warning=FALSE, message=FALSE, fig.align="center", fig.margin = TRUE, fig.fullwidth=TRUE)
 library(plotly)
 library(reshape2)
 library(lubridate)
 library(zoo)
 library(forecast)
 library(plyr)
+library(shiny)
 seed <- 31
 ```
 
-```{r}
+```{r include=FALSE}
 title  <- "Total Vehicle Sales in thousands of units over months"
 x.axis <- "Months"
 y.axis <- "Total Vehicle Sales (in thousands of units)"
 ```
 
-```{r}
+```{r include=FALSE}
 plot.serie <- function(ts) {
   df <- data.frame(date=as.Date(as.yearmon(time(ts))), values = melt(ts)$value)
-  plot_ly(df, x=~date) %>%
+  plot <- plot_ly(df, x=~date) %>%
   add_trace(y = ~values, mode = 'lines') %>%
   layout(title = title,
        xaxis = list(title = x.axis),
        yaxis = list(title = y.axis))
+  div(plot, align = "center")
 }
 ```
 
-```{r}
+```{r include=FALSE}
 monthplot.serie <- function(ts) {
   df <- data.frame(date=as.Date(as.yearmon(time(ts))), values = melt(ts)$value)
   df$month <- factor(month(df$date), levels=1:12, labels=month.abb, ordered=TRUE)
@@ -47,18 +49,19 @@ monthplot.serie <- function(ts) {
   head(hline.data)
 
   plot <- ggplot() +
-    geom_line(aes(x=year, y=values, group=month), data=df) +
+    geom_line(aes(x=year, y=values, group=month), , color = "#1F77B4", data=df) +
     geom_hline(aes(yintercept=avgvalue), data=hline.data) +
     facet_grid(~month) +
     theme(
       axis.title.x=element_blank(),
       axis.text.x=element_blank(),
       axis.ticks.x=element_blank())
-  ggplotly(plot)
+  plot <- ggplotly(plot)
+  div(plot, align = "center")
 }
 ```
 
-```{r}
+```{r include=FALSE}
 plot.forecast <- function(ts, forecast) {
   alpha.1 <- 0.05
   alpha.2 <- 0.20
@@ -80,16 +83,17 @@ plot.forecast <- function(ts, forecast) {
   
   new.df <- merge(x = df, y = df.forecast, by = "date", all = TRUE)
   
-  plot_ly(new.df) %>%
+  plot <- plot_ly(new.df) %>%
   layout(title = title,
        xaxis = list(title = x.axis),
        yaxis = list(title = y.axis)) %>%
-  add_lines  (x = ~date, y = ~values.obs,  mode = 'lines', color = I("black"), name = "observation") %>%
-  add_lines  (x = ~date, y = ~values.pred, mode = 'lines', color = I("blue"),  name = "prediction" ) %>%
+  add_lines  (x = ~date, y = ~values.obs,  mode = 'lines', name = "observation") %>%
+  add_lines  (x = ~date, y = ~values.pred, mode = 'lines', color = I("red"),  name = "prediction" ) %>%
   add_ribbons(x = ~date, ymin = ~lower.1, ymax = ~upper.1,
               color = I("gray95"), name = "95% confidence") %>%
   add_ribbons(x = ~date, ymin = ~lower.2, ymax = ~upper.2,
               color = I("gray80"), name = "80% confidence")
+  div(plot, align = "center")
 }
 ```
 
@@ -155,7 +159,7 @@ Box.test(model1$residuals, lag = 15, type="Ljung-Box")
 ```
 
 ```{r}
-model2<- arima(TOTALNSA.ts, order = c(2,1,2),seasonal=c(2,1,2))
+model2 <- arima(TOTALNSA.ts, order = c(2,1,2),seasonal=c(2,1,2))
 model2
 acf(model2$residuals)
 Box.test(model2$residuals, lag = 15, type="Ljung-Box")
@@ -164,17 +168,11 @@ Box.test(model2$residuals, lag = 15, type="Ljung-Box")
 ```
 
 ```{r}
-myforecast<-predict(model2,n.ahead=5)
+myforecast<-predict(model2,n.ahead=50)
 point.forecast<-myforecast$pred
 SE<-myforecast$se
 lower<-point.forecast-qnorm(0.975)*SE
 upper<-point.forecast+qnorm(0.975)*SE
-# plot.serie(TOTALNSA.ts)
-plot(TOTALNSA.ts)
-lines(point.forecast,col="red")
-lines(lower,col="blue")
-lines(upper,col="blue")
-
 plot.forecast(TOTALNSA.ts, myforecast)
 ```
 
