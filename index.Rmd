@@ -6,6 +6,8 @@ output: pdf_document
 always_allow_html: yes
 ---
 
+The full repository (including dataset) is available [here](https://github.com/leonard-henriquez/car_sales)
+
 ```{r message=FALSE, warning=FALSE, include=FALSE}
 knitr::opts_chunk$set(cache = TRUE, warning=FALSE)
 seed <- 31
