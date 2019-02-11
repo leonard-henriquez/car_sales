@@ -6,6 +6,11 @@ output: pdf_document
 always_allow_html: yes
 ---
 
+```{r message=FALSE, warning=FALSE, include=FALSE}
+knitr::opts_chunk$set(cache = TRUE, warning=FALSE)
+seed <- 31
+```
+
 ```{r}
 mydata=read.csv("input/TOTALNSA.csv",header=T,dec=".")
 dim(mydata)

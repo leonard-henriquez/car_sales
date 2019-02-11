@@ -227,37 +227,37 @@ dim(mydata)</code></pre>
 <pre><code>## [1] 517   2</code></pre>
 <pre class="r"><code>TOTALNSA.ts=ts(mydata$TOTALNSA,frequency=12,c(1976,1))
 plot(TOTALNSA.ts)</code></pre>
-<p><img src="index_files/figure-html/unnamed-chunk-1-1.png" width="672" /></p>
+<p><img src="index_files/figure-html/unnamed-chunk-2-1.png" width="672" /></p>
 <pre class="r"><code>#there is clear growing trend but with period of crisis</code></pre>
 <pre class="r"><code>#maybe we could start a new dataset from 2007-2008 for better predictions
 
 monthplot(TOTALNSA.ts)</code></pre>
-<p><img src="index_files/figure-html/unnamed-chunk-2-1.png" width="672" /></p>
+<p><img src="index_files/figure-html/unnamed-chunk-3-1.png" width="672" /></p>
 <pre class="r"><code>#saisonnalité</code></pre>
 <pre class="r"><code>y1= diff(TOTALNSA.ts,lag=12)
 plot(y1)</code></pre>
-<p><img src="index_files/figure-html/unnamed-chunk-3-1.png" width="672" /></p>
+<p><img src="index_files/figure-html/unnamed-chunk-4-1.png" width="672" /></p>
 <pre class="r"><code>#mauvais </code></pre>
 <pre class="r"><code>y2= diff(log(TOTALNSA.ts),lag=12)
 plot(y2)</code></pre>
-<p><img src="index_files/figure-html/unnamed-chunk-4-1.png" width="672" /></p>
+<p><img src="index_files/figure-html/unnamed-chunk-5-1.png" width="672" /></p>
 <pre class="r"><code>#mauvais </code></pre>
 <pre class="r"><code>y3=diff(TOTALNSA.ts)
 plot(y3)</code></pre>
-<p><img src="index_files/figure-html/unnamed-chunk-5-1.png" width="672" /></p>
+<p><img src="index_files/figure-html/unnamed-chunk-6-1.png" width="672" /></p>
 <pre class="r"><code>#pas mal</code></pre>
 <pre class="r"><code>y4=diff(diff(TOTALNSA.ts,lag=12))
 plot(y4)</code></pre>
-<p><img src="index_files/figure-html/unnamed-chunk-6-1.png" width="672" /></p>
+<p><img src="index_files/figure-html/unnamed-chunk-7-1.png" width="672" /></p>
 <pre class="r"><code>#pas mal aussi</code></pre>
 <pre class="r"><code>acf(y3) </code></pre>
-<p><img src="index_files/figure-html/unnamed-chunk-7-1.png" width="672" /></p>
-<pre class="r"><code>pacf(y3)</code></pre>
-<p><img src="index_files/figure-html/unnamed-chunk-7-2.png" width="672" /></p>
-<pre class="r"><code>acf(y4)</code></pre>
 <p><img src="index_files/figure-html/unnamed-chunk-8-1.png" width="672" /></p>
-<pre class="r"><code>pacf(y4)</code></pre>
+<pre class="r"><code>pacf(y3)</code></pre>
 <p><img src="index_files/figure-html/unnamed-chunk-8-2.png" width="672" /></p>
+<pre class="r"><code>acf(y4)</code></pre>
+<p><img src="index_files/figure-html/unnamed-chunk-9-1.png" width="672" /></p>
+<pre class="r"><code>pacf(y4)</code></pre>
+<p><img src="index_files/figure-html/unnamed-chunk-9-2.png" width="672" /></p>
 <pre class="r"><code>model1&lt;- arima(TOTALNSA.ts, order = c(0,1,1),seasonal=c(0,1,0))
 model1</code></pre>
 <pre><code>## 
@@ -271,7 +271,7 @@ model1</code></pre>
 ## 
 ## sigma^2 estimated as 11634:  log likelihood = -3074.57,  aic = 6153.14</code></pre>
 <pre class="r"><code>acf(model1$residuals) </code></pre>
-<p><img src="index_files/figure-html/unnamed-chunk-9-1.png" width="672" /></p>
+<p><img src="index_files/figure-html/unnamed-chunk-10-1.png" width="672" /></p>
 <pre class="r"><code>Box.test(model1$residuals, lag = 15, type=&quot;Ljung-Box&quot;)</code></pre>
 <pre><code>## 
 ##  Box-Ljung test
@@ -292,7 +292,7 @@ model2</code></pre>
 ## 
 ## sigma^2 estimated as 8056:  log likelihood = -2988.03,  aic = 5994.06</code></pre>
 <pre class="r"><code>acf(model2$residuals) </code></pre>
-<p><img src="index_files/figure-html/unnamed-chunk-10-1.png" width="672" /></p>
+<p><img src="index_files/figure-html/unnamed-chunk-11-1.png" width="672" /></p>
 <pre class="r"><code>Box.test(model2$residuals, lag = 15, type=&quot;Ljung-Box&quot;)</code></pre>
 <pre><code>## 
 ##  Box-Ljung test
@@ -310,9 +310,9 @@ plot(TOTALNSA.ts,xlim=c(2000,2019))
 lines(point.forecast,col=&quot;red&quot;)
 lines(lower,col=&quot;blue&quot;)
 lines(upper,col=&quot;blue&quot;)</code></pre>
-<p><img src="index_files/figure-html/unnamed-chunk-11-1.png" width="672" /></p>
+<p><img src="index_files/figure-html/unnamed-chunk-12-1.png" width="672" /></p>
 
-<div id="rmd-source-code">LS0tDQp0aXRsZTogIk1hY2hpbmUgTGVhcm5pbmcgb24gVVMgcHJlc2lkZW50aWFsIGVsZWN0aW9uIG9mIDIwMTYiDQphdXRob3I6ICdbTGVvbmFyZCBIZW5yaXF1ZXpdKGh0dHBzOi8vZ2l0aHViLmNvbS9sZW9uYXJkLWhlbnJpcXVlei8pLCBBZHJpZW4gTGVxdWlsbGVyICYgRWRkeSBPaGF5b24nDQpkYXRlOiAiYHIgU3lzLkRhdGUoKWAiDQpvdXRwdXQ6IHBkZl9kb2N1bWVudA0KYWx3YXlzX2FsbG93X2h0bWw6IHllcw0KLS0tDQoNCmBgYHtyfQ0KbXlkYXRhPXJlYWQuY3N2KCJpbnB1dC9UT1RBTE5TQS5jc3YiLGhlYWRlcj1ULGRlYz0iLiIpDQpkaW0obXlkYXRhKQ0KVE9UQUxOU0EudHM9dHMobXlkYXRhJFRPVEFMTlNBLGZyZXF1ZW5jeT0xMixjKDE5NzYsMSkpDQpwbG90KFRPVEFMTlNBLnRzKQ0KI3RoZXJlIGlzIGNsZWFyIGdyb3dpbmcgdHJlbmQgYnV0IHdpdGggcGVyaW9kIG9mIGNyaXNpcw0KYGBgDQoNCmBgYHtyfQ0KI21heWJlIHdlIGNvdWxkIHN0YXJ0IGEgbmV3IGRhdGFzZXQgZnJvbSAyMDA3LTIwMDggZm9yIGJldHRlciBwcmVkaWN0aW9ucw0KDQptb250aHBsb3QoVE9UQUxOU0EudHMpDQojc2Fpc29ubmFsaXTDqQ0KDQpgYGANCg0KYGBge3J9DQp5MT0gZGlmZihUT1RBTE5TQS50cyxsYWc9MTIpDQpwbG90KHkxKQ0KI21hdXZhaXMgDQpgYGANCg0KYGBge3J9DQp5Mj0gZGlmZihsb2coVE9UQUxOU0EudHMpLGxhZz0xMikNCnBsb3QoeTIpDQojbWF1dmFpcyANCmBgYA0KDQpgYGB7cn0NCnkzPWRpZmYoVE9UQUxOU0EudHMpDQpwbG90KHkzKQ0KI3BhcyBtYWwNCmBgYA0KDQpgYGB7cn0NCnk0PWRpZmYoZGlmZihUT1RBTE5TQS50cyxsYWc9MTIpKQ0KcGxvdCh5NCkNCiNwYXMgbWFsIGF1c3NpDQpgYGANCg0KYGBge3J9DQphY2YoeTMpIA0KcGFjZih5MykNCmBgYA0KDQpgYGB7cn0NCmFjZih5NCkNCnBhY2YoeTQpDQpgYGANCg0KYGBge3J9DQptb2RlbDE8LSBhcmltYShUT1RBTE5TQS50cywgb3JkZXIgPSBjKDAsMSwxKSxzZWFzb25hbD1jKDAsMSwwKSkNCm1vZGVsMQ0KYWNmKG1vZGVsMSRyZXNpZHVhbHMpIA0KQm94LnRlc3QobW9kZWwxJHJlc2lkdWFscywgbGFnID0gMTUsIHR5cGU9IkxqdW5nLUJveCIpDQojZm9uY3Rpb25uZSBwYXMNCmBgYA0KDQpgYGB7cn0NCm1vZGVsMjwtIGFyaW1hKFRPVEFMTlNBLnRzLCBvcmRlciA9IGMoMiwxLDIpLHNlYXNvbmFsPWMoMiwxLDIpKQ0KbW9kZWwyDQphY2YobW9kZWwyJHJlc2lkdWFscykgDQpCb3gudGVzdChtb2RlbDIkcmVzaWR1YWxzLCBsYWcgPSAxNSwgdHlwZT0iTGp1bmctQm94IikNCg0KI3NlbWJsZSBldHJlIGxlIHBsdXMgY291cnQgZXQgbGUgbWVpbGxldXIgYXByZXMgcGx1c2lldXJzIHRlc3RzDQpgYGANCg0KYGBge3J9DQpteWZvcmVjYXN0PC1wcmVkaWN0KG1vZGVsMixuLmFoZWFkPTUpDQpwb2ludC5mb3JlY2FzdDwtbXlmb3JlY2FzdCRwcmVkDQpTRTwtbXlmb3JlY2FzdCRzZQ0KbG93ZXI8LXBvaW50LmZvcmVjYXN0LXFub3JtKDAuOTc1KSpTRQ0KdXBwZXI8LXBvaW50LmZvcmVjYXN0K3Fub3JtKDAuOTc1KSpTRQ0KcGxvdChUT1RBTE5TQS50cyx4bGltPWMoMjAwMCwyMDE5KSkNCiMgd2UgYWRqdXN0IHRoZSBzY2FsZSBvZiB0aGUgYXhlcyB0byBnZXQgYSBuaWNlciBwbG90DQpsaW5lcyhwb2ludC5mb3JlY2FzdCxjb2w9InJlZCIpDQpsaW5lcyhsb3dlcixjb2w9ImJsdWUiKQ0KbGluZXModXBwZXIsY29sPSJibHVlIikNCmBgYA0KDQo=</div>
+<div id="rmd-source-code">LS0tDQp0aXRsZTogIk1hY2hpbmUgTGVhcm5pbmcgb24gVVMgcHJlc2lkZW50aWFsIGVsZWN0aW9uIG9mIDIwMTYiDQphdXRob3I6ICdbTGVvbmFyZCBIZW5yaXF1ZXpdKGh0dHBzOi8vZ2l0aHViLmNvbS9sZW9uYXJkLWhlbnJpcXVlei8pLCBBZHJpZW4gTGVxdWlsbGVyICYgRWRkeSBPaGF5b24nDQpkYXRlOiAiYHIgU3lzLkRhdGUoKWAiDQpvdXRwdXQ6IHBkZl9kb2N1bWVudA0KYWx3YXlzX2FsbG93X2h0bWw6IHllcw0KLS0tDQoNCmBgYHtyIG1lc3NhZ2U9RkFMU0UsIHdhcm5pbmc9RkFMU0UsIGluY2x1ZGU9RkFMU0V9DQprbml0cjo6b3B0c19jaHVuayRzZXQoY2FjaGUgPSBUUlVFLCB3YXJuaW5nPUZBTFNFKQ0Kc2VlZCA8LSAzMQ0KYGBgDQoNCmBgYHtyfQ0KbXlkYXRhPXJlYWQuY3N2KCJpbnB1dC9UT1RBTE5TQS5jc3YiLGhlYWRlcj1ULGRlYz0iLiIpDQpkaW0obXlkYXRhKQ0KVE9UQUxOU0EudHM9dHMobXlkYXRhJFRPVEFMTlNBLGZyZXF1ZW5jeT0xMixjKDE5NzYsMSkpDQpwbG90KFRPVEFMTlNBLnRzKQ0KI3RoZXJlIGlzIGNsZWFyIGdyb3dpbmcgdHJlbmQgYnV0IHdpdGggcGVyaW9kIG9mIGNyaXNpcw0KYGBgDQoNCmBgYHtyfQ0KI21heWJlIHdlIGNvdWxkIHN0YXJ0IGEgbmV3IGRhdGFzZXQgZnJvbSAyMDA3LTIwMDggZm9yIGJldHRlciBwcmVkaWN0aW9ucw0KDQptb250aHBsb3QoVE9UQUxOU0EudHMpDQojc2Fpc29ubmFsaXTDqQ0KDQpgYGANCg0KYGBge3J9DQp5MT0gZGlmZihUT1RBTE5TQS50cyxsYWc9MTIpDQpwbG90KHkxKQ0KI21hdXZhaXMgDQpgYGANCg0KYGBge3J9DQp5Mj0gZGlmZihsb2coVE9UQUxOU0EudHMpLGxhZz0xMikNCnBsb3QoeTIpDQojbWF1dmFpcyANCmBgYA0KDQpgYGB7cn0NCnkzPWRpZmYoVE9UQUxOU0EudHMpDQpwbG90KHkzKQ0KI3BhcyBtYWwNCmBgYA0KDQpgYGB7cn0NCnk0PWRpZmYoZGlmZihUT1RBTE5TQS50cyxsYWc9MTIpKQ0KcGxvdCh5NCkNCiNwYXMgbWFsIGF1c3NpDQpgYGANCg0KYGBge3J9DQphY2YoeTMpIA0KcGFjZih5MykNCmBgYA0KDQpgYGB7cn0NCmFjZih5NCkNCnBhY2YoeTQpDQpgYGANCg0KYGBge3J9DQptb2RlbDE8LSBhcmltYShUT1RBTE5TQS50cywgb3JkZXIgPSBjKDAsMSwxKSxzZWFzb25hbD1jKDAsMSwwKSkNCm1vZGVsMQ0KYWNmKG1vZGVsMSRyZXNpZHVhbHMpIA0KQm94LnRlc3QobW9kZWwxJHJlc2lkdWFscywgbGFnID0gMTUsIHR5cGU9IkxqdW5nLUJveCIpDQojZm9uY3Rpb25uZSBwYXMNCmBgYA0KDQpgYGB7cn0NCm1vZGVsMjwtIGFyaW1hKFRPVEFMTlNBLnRzLCBvcmRlciA9IGMoMiwxLDIpLHNlYXNvbmFsPWMoMiwxLDIpKQ0KbW9kZWwyDQphY2YobW9kZWwyJHJlc2lkdWFscykgDQpCb3gudGVzdChtb2RlbDIkcmVzaWR1YWxzLCBsYWcgPSAxNSwgdHlwZT0iTGp1bmctQm94IikNCg0KI3NlbWJsZSBldHJlIGxlIHBsdXMgY291cnQgZXQgbGUgbWVpbGxldXIgYXByZXMgcGx1c2lldXJzIHRlc3RzDQpgYGANCg0KYGBge3J9DQpteWZvcmVjYXN0PC1wcmVkaWN0KG1vZGVsMixuLmFoZWFkPTUpDQpwb2ludC5mb3JlY2FzdDwtbXlmb3JlY2FzdCRwcmVkDQpTRTwtbXlmb3JlY2FzdCRzZQ0KbG93ZXI8LXBvaW50LmZvcmVjYXN0LXFub3JtKDAuOTc1KSpTRQ0KdXBwZXI8LXBvaW50LmZvcmVjYXN0K3Fub3JtKDAuOTc1KSpTRQ0KcGxvdChUT1RBTE5TQS50cyx4bGltPWMoMjAwMCwyMDE5KSkNCiMgd2UgYWRqdXN0IHRoZSBzY2FsZSBvZiB0aGUgYXhlcyB0byBnZXQgYSBuaWNlciBwbG90DQpsaW5lcyhwb2ludC5mb3JlY2FzdCxjb2w9InJlZCIpDQpsaW5lcyhsb3dlcixjb2w9ImJsdWUiKQ0KbGluZXModXBwZXIsY29sPSJibHVlIikNCmBgYA0KDQo=</div>
 
 
 
