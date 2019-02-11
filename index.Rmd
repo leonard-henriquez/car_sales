@@ -29,74 +29,6 @@ monthplot(TOTALNSA.ts)
 
 ```
 
-```{r}
-y1= diff(TOTALNSA.ts,lag=12)
-plot(y1)
-#mauvais 
-```
-
-```{r}
-y2= diff(log(TOTALNSA.ts),lag=12)
-plot(y2)
-#mauvais 
-```
-
-```{r}
-y3=diff(TOTALNSA.ts)
-plot(y3)
-#pas mal
-```
-
-```{r}
-y4=diff(diff(TOTALNSA.ts,lag=12))
-plot(y4)
-#pas mal aussi
-```
-
-```{r}
-acf(y3) 
-pacf(y3)
-```
-
-```{r}
-acf(y4)
-pacf(y4)
-
-#MA(1)
-#AR(++)
-#go first on ARMA(1,1)
-```
-
-```{r}
-model1<- arima(TOTALNSA.ts, order = c(0,1,1),seasonal=c(0,1,0))
-model1
-acf(model1$residuals) 
-Box.test(model1$residuals, lag = 15, type="Ljung-Box")
-#fonctionne pas
-```
-
-```{r}
-model2<- arima(TOTALNSA.ts, order = c(2,1,2),seasonal=c(2,1,2))
-model2
-acf(model2$residuals) 
-Box.test(model2$residuals, lag = 15, type="Ljung-Box")
-
-#semble etre le plus court et le meilleur apres plusieurs tests
-```
-
-```{r}
-myforecast<-predict(model2,n.ahead=5)
-point.forecast<-myforecast$pred
-SE<-myforecast$se
-lower<-point.forecast-qnorm(0.975)*SE
-upper<-point.forecast+qnorm(0.975)*SE
-plot(TOTALNSA.ts,xlim=c(2000,2019))
-# we adjust the scale of the axes to get a nicer plot
-lines(point.forecast,col="red")
-lines(lower,col="blue")
-lines(upper,col="blue")
-```
-
 
 ```{r}
 #winddow : remoe the crisis - we have enough data
@@ -110,72 +42,121 @@ monthplot(TOTALNSA.ts.2)
 ```
 
 ```{r}
-y1.2=diff(TOTALNSA.ts.2,lag=12)
-plot(y1.2)
+y1=diff(TOTALNSA.ts.2,lag=12)
+plot(y1)
 ```
 
 ```{r}
-y2.2=diff(diff(log(TOTALNSA.ts.2),lag=12))
-plot(y2.2)
+y2=diff(diff(log(TOTALNSA.ts.2),lag=12))
+plot(y2)
 #stationnary 
 ```
 
 ```{r}
-acf(y2.2)
-pacf(y2.2)
+acf(y2)
+pacf(y2)
 ```
 
 ```{r}
-model1.2<- arima(log(TOTALNSA.ts.2), order = c(0,1,1),seasonal=c(0,1,0))
-model1.2
-acf(model1.2$residuals) 
-Box.test(model1.2$residuals, lag = 15, type="Ljung-Box")
+model1<- arima(log(TOTALNSA.ts.2), order = c(0,1,1),seasonal=c(0,1,0))
+model1
+acf(model1$residuals) 
+Box.test(model1$residuals, lag = 15, type="Ljung-Box")
 ##MA(1)
 ```
 
 ```{r}
-model2.2<- arima(log(TOTALNSA.ts.2), order = c(1,1,1),seasonal=c(0,1,0))
-model2.2
-acf(model2.2$residuals) 
-Box.test(model2.2$residuals, lag = 15, type="Ljung-Box")
+model2<- arima(log(TOTALNSA.ts.2), order = c(1,1,1),seasonal=c(0,1,0))
+model2
+acf(model2$residuals) 
+Box.test(model2$residuals, lag = 15, type="Ljung-Box")
 #works also
 ```
 
 ```{r}
-model3.2<- arima(log(TOTALNSA.ts.2), order = c(0,1,2),seasonal=c(0,1,0))
-model3.2
-acf(model3.2$residuals) 
-Box.test(model3.2$residuals, lag = 15, type="Ljung-Box")
+model3<- arima(log(TOTALNSA.ts.2), order = c(0,1,2),seasonal=c(0,1,0))
+model3
+acf(model3$residuals) 
+Box.test(model3$residuals, lag = 15, type="Ljung-Box")
 #il vaut mieux garder une AR(1) aussi du coup
 ```
 
 ```{r}
-model4.2<- arima(log(TOTALNSA.ts.2), order = c(1,1,2),seasonal=c(0,1,0))
-model4.2
-acf(model4.2$residuals) 
-Box.test(model4.2$residuals, lag = 15, type="Ljung-Box")
+model4<- arima(log(TOTALNSA.ts.2), order = c(1,1,2),seasonal=c(0,1,0))
+model4
+acf(model4$residuals) 
+Box.test(model4$residuals, lag = 15, type="Ljung-Box")
 ```
 
 ```{r}
-AIC(model1.2) 
-AIC(model2.2)
+cbind(AIC(model1), AIC(model2), AIC(model3),AIC(model4))
 # model 1 is better according to AIC
-BIC(model1.2) 
-BIC(model2.2)
+cbind(BIC(model1),BIC(model2),BIC(model3),BIC(model4))
 #model 1 is better
 
 ##AIC and BIC take the model complexity in account 
 ```
 
+We are going to compare Model 1 and 2 !
+Model 1 seems to be better for both AIC and BIC
+
+- IN SAMPLE TEST
+
+```{r}
+y=log(TOTALNSA.ts.2)
+error1<-c()
+for (i in 14:(length(y)-1))
+{
+  mymodel<-arima(y[1:i], order = c(0,1,1),seasonal=c(0,1,0))
+  predict<-predict(mymodel,n.ahead=1)
+  error1<-c(error1,y[i+1]-predict$pred)
+}
+
+error2<-c()
+for (i in 14:(length(y)-1))
+{
+  mymodel<-arima(y[1:i], order = c(1,1,1),seasonal=c(0,1,0))
+  predict<-predict(mymodel,n.ahead=1)
+  error2<-c(error2,y[i+1]-predict$pred)
+}
+
+boxplot(error1,error2)
+
+
+MAE1<-mean(abs(error1));MAE1
+MAE2<-mean(abs(error2));MAE2
+
+MSE1<-mean(abs(error1)^2);MSE1
+MSE2<-mean(abs(error2)^2);MSE2
+
+
+library(forecast)
+dm.test(error1,error2,h=1,power=1) 
+dm.test(error1,error2,h=1,power=2) 
+
+
+rerror1=error1/y[15:length(y)]
+rerror2=error2/y[15:length(y)]
+
+MAPE1=mean(abs(rerror1));MAPE1
+MAPE2=mean(abs(rerror2));MAPE2
+dm.test(rerror1,rerror2,h=1,power=1) 
+dm.test(rerror1,rerror2,h=1,power=2) 
+```
+
+
+- OUT OF SAMPLE TEST 
+
+- Expanding Window
+
 ```{r}
 y<-log(TOTALNSA.ts.2)
-S=round(0.75*length(y))
-h=1
+S=round(0.7*length(y))
+h=5
 error1.h<-c()
 for (i in S:(length(y)-h))
 {
   mymodel.sub<-arima(y[1:i], order = c(0,1,1),seasonal = c(0,1,0))
-# mymodel.sub<-arima(y[(i-S+1):i], order = c(3,1,0)) moving window
   predict.h<-predict(mymodel.sub,n.ahead=h)$pred[h]
   error1.h<-c(error1.h,y[i+h]-predict.h)
 }
@@ -189,22 +170,16 @@ for (i in S:(length(y)-h))
 }
 
 boxplot(error1.h,error2.h)
-```
 
-```{r}
 MAE1<-mean(abs(error1.h));MAE1
 MAE2<-mean(abs(error2.h));MAE2
-# Model 1 has a smaller Mean Absolute Error
+
 MSE1<-mean(abs(error1.h)^2);MSE1
 MSE2<-mean(abs(error2.h)^2);MSE2
-```
 
-```{r}
-library(forecast)
 dm.test(error1.h,error2.h,h=h,power=1) 
-# no significant difference between MAE1 and MAE2
 dm.test(error1.h,error2.h,h=h,power=2) 
-# no significant difference between MSE1 and MSE2
+
 
 ## A possibility would be to work with both and AVERAGE!
 
@@ -215,5 +190,67 @@ rerror2.h=error2.h/y[(S+h):length(y)]
 MAPE1=mean(abs(rerror1.h));MAPE1
 MAPE2=mean(abs(rerror2.h));MAPE2
 dm.test(rerror1.h,rerror2.h,h=h,power=1) 
+dm.test(rerror1.h,rerror2.h,h=h,power=2) 
 ```
+
+
+- Rowing Window
+
+```{r}
+y<-log(TOTALNSA.ts.2)
+S=round(0.7*length(y))
+h=5
+error1.h<-c()
+for (i in S:(length(y)-h))
+{
+  mymodel.sub<-arima(y[(i-S+1):i], order = c(0,1,1),seasonal = c(0,1,0))
+  predict.h<-predict(mymodel.sub,n.ahead=h)$pred[h]
+  error1.h<-c(error1.h,y[i+h]-predict.h)
+}
+
+error2.h<-c()
+for (i in S:(length(y)-h))
+{
+  mymodel.sub<-arima(y[(i-S+1):i], order = c(1,1,1),seasonal=c(0,1,0))
+  predict.h<-predict(mymodel.sub,n.ahead=h)$pred[h]
+  error2.h<-c(error2.h,y[i+h]-predict.h)
+}
+
+boxplot(error1.h,error2.h)
+
+MAE1<-mean(abs(error1.h));MAE1
+MAE2<-mean(abs(error2.h));MAE2
+
+MSE1<-mean(abs(error1.h)^2);MSE1
+MSE2<-mean(abs(error2.h)^2);MSE2
+
+dm.test(error1.h,error2.h,h=h,power=1) 
+dm.test(error1.h,error2.h,h=h,power=2) 
+
+
+## A possibility would be to work with both and AVERAGE!
+
+#let's do MAPE
+rerror1.h=error1.h/y[(S+h):length(y)]
+rerror2.h=error2.h/y[(S+h):length(y)]
+
+MAPE1=mean(abs(rerror1.h));MAPE1
+MAPE2=mean(abs(rerror2.h));MAPE2
+dm.test(rerror1.h,rerror2.h,h=h,power=1) 
+dm.test(rerror1.h,rerror2.h,h=h,power=2) 
+```
+
+```{r}
+myforecast<-predict(model1,n.ahead=5)
+point.forecast<-myforecast$pred
+SE<-myforecast$se
+lower<-point.forecast-qnorm(0.975)*SE
+upper<-point.forecast+qnorm(0.975)*SE
+plot(TOTALNSA.ts.2,xlim=c(2010,2020))
+lines(exp(point.forecast),col="red")
+lines(exp(lower),col="blue")
+lines(exp(upper),col="blue")
+```
+
+
 
