@@ -1,0 +1,8 @@
+name: "US car sales"
+output_dir: "docs"
+navbar:
+  title: "US car sales"
+output:
+  html_document:
+    theme: cosmo
+    code_download: true

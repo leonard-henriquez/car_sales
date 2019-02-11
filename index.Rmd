@@ -1,0 +1,88 @@
+---
+title: "Machine Learning on US presidential election of 2016"
+author: '[Leonard Henriquez](https://github.com/leonard-henriquez/), Adrien Lequiller & Eddy Ohayon'
+date: "`r Sys.Date()`"
+output: pdf_document
+always_allow_html: yes
+---
+
+```{r}
+mydata=read.csv("input/TOTALNSA.csv",header=T,dec=".")
+dim(mydata)
+TOTALNSA.ts=ts(mydata$TOTALNSA,frequency=12,c(1976,1))
+plot(TOTALNSA.ts)
+#there is clear growing trend but with period of crisis
+```
+
+```{r}
+#maybe we could start a new dataset from 2007-2008 for better predictions
+
+monthplot(TOTALNSA.ts)
+#saisonnalité
+
+```
+
+```{r}
+y1= diff(TOTALNSA.ts,lag=12)
+plot(y1)
+#mauvais 
+```
+
+```{r}
+y2= diff(log(TOTALNSA.ts),lag=12)
+plot(y2)
+#mauvais 
+```
+
+```{r}
+y3=diff(TOTALNSA.ts)
+plot(y3)
+#pas mal
+```
+
+```{r}
+y4=diff(diff(TOTALNSA.ts,lag=12))
+plot(y4)
+#pas mal aussi
+```
+
+```{r}
+acf(y3) 
+pacf(y3)
+```
+
+```{r}
+acf(y4)
+pacf(y4)
+```
+
+```{r}
+model1<- arima(TOTALNSA.ts, order = c(0,1,1),seasonal=c(0,1,0))
+model1
+acf(model1$residuals) 
+Box.test(model1$residuals, lag = 15, type="Ljung-Box")
+#fonctionne pas
+```
+
+```{r}
+model2<- arima(TOTALNSA.ts, order = c(2,1,2),seasonal=c(2,1,2))
+model2
+acf(model2$residuals) 
+Box.test(model2$residuals, lag = 15, type="Ljung-Box")
+
+#semble etre le plus court et le meilleur apres plusieurs tests
+```
+
+```{r}
+myforecast<-predict(model2,n.ahead=5)
+point.forecast<-myforecast$pred
+SE<-myforecast$se
+lower<-point.forecast-qnorm(0.975)*SE
+upper<-point.forecast+qnorm(0.975)*SE
+plot(TOTALNSA.ts,xlim=c(2000,2019))
+# we adjust the scale of the axes to get a nicer plot
+lines(point.forecast,col="red")
+lines(lower,col="blue")
+lines(upper,col="blue")
+```
+
