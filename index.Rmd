@@ -10,15 +10,54 @@ The full repository (including dataset) is available [here](https://github.com/l
 
 ```{r message=FALSE, warning=FALSE, include=FALSE}
 knitr::opts_chunk$set(cache = TRUE, warning=FALSE)
+library(plotly)
+library(zoo)
 seed <- 31
 ```
 
 ```{r}
 mydata=read.csv("input/TOTALNSA.csv",header=T,dec=".")
-dim(mydata)
+
 TOTALNSA.ts=ts(mydata$TOTALNSA,frequency=12,c(1976,1))
-plot(TOTALNSA.ts)
+df <- data.frame(date=as.Date(as.yearmon(time(TOTALNSA.ts))), values = melt(TOTALNSA.ts)$value)
+
+title  <- "Total Vehicle Sales in thousands of units over months"
+x.axis <- "Months"
+y.axis <- "Total Vehicle Sales (in thousands of units)"
+
+plot.serie = function(df) {
+  plot_ly(df, x=~date) %>%
+  add_trace(y = ~values, mode = 'lines') %>%
+  layout(title = title,
+       xaxis = list(title = x.axis),
+       yaxis = list(title = y.axis))
+}
+
+plot.serie(df)
+
 #there is clear growing trend but with period of crisis
+```
+```{r}
+monthplot.serie <- function(df) {
+  df$month <- factor(month(df$date), levels=1:12, labels=month.abb, ordered=TRUE)
+  df$year  <- year(df$date)
+  
+  hline.data <- ddply(df, .(month), summarize, avgvalue=mean(values))
+  head(hline.data)
+  
+  plot <- ggplot() + 
+    geom_line(aes(x=year, y=values, group=month), data=df) +
+    geom_hline(aes(yintercept=avgvalue), data=hline.data) +
+    facet_grid(~month) +
+    theme(
+      axis.title.x=element_blank(),
+      axis.text.x=element_blank(),
+      axis.ticks.x=element_blank())
+  ggplotly(plot)
+}
+
+monthplot.serie(df)
+
 ```
 
 ```{r}
