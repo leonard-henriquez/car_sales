@@ -93,3 +93,39 @@ lines(lower,col="blue")
 lines(upper,col="blue")
 ```
 
+
+
+```{r}
+# We make a subset of the data
+TOTALNSA.ts2 <- window(TOTALNSA.ts,start=c(2010,1))
+plot(TOTALNSA.ts2)
+```
+
+
+```{r}
+plot(diff(diff(log(TOTALNSA.ts2)),lag=12))
+# Looks stationary
+```
+
+
+
+```{r}
+# We make a SARIMA(0,1,1)(0,1,0) on the subset data
+model<- arima(log(TOTALNSA.ts2), order = c(0,1,1),seasonal=c(0,1,0))
+model
+acf(model$residuals) 
+Box.test(model$residuals, lag = 15, type="Ljung-Box")
+```
+
+```{r}
+myforecast<-predict(model,n.ahead=12)
+point.forecast<-myforecast$pred
+SE<-myforecast$se
+lower<-point.forecast-qnorm(0.975)*SE
+upper<-point.forecast+qnorm(0.975)*SE
+plot(TOTALNSA.ts2,xlim=c(2010,2021),ylim=c(800,1850))
+# we adjust the scale of the axes to get a nicer plot
+lines(exp(point.forecast),col="red")
+lines(exp(lower),col="blue")
+lines(exp(upper),col="blue")
+```
