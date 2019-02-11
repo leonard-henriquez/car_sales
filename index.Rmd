@@ -11,34 +11,34 @@ The full repository (including dataset) is available [here](https://github.com/l
 ```{r message=FALSE, warning=FALSE, include=FALSE}
 knitr::opts_chunk$set(cache = TRUE, warning=FALSE)
 library(plotly)
+library(reshape2)
+library(lubridate)
 library(zoo)
+library(forecast)
+library(plyr)
 seed <- 31
 ```
 
 ```{r}
-mydata=read.csv("input/TOTALNSA.csv",header=T,dec=".")
-
-TOTALNSA.ts=ts(mydata$TOTALNSA,frequency=12,c(1976,1))
-df <- data.frame(date=as.Date(as.yearmon(time(TOTALNSA.ts))), values = melt(TOTALNSA.ts)$value)
-
 title  <- "Total Vehicle Sales in thousands of units over months"
 x.axis <- "Months"
 y.axis <- "Total Vehicle Sales (in thousands of units)"
+```
 
-plot.serie = function(df) {
+```{r}
+plot.serie <- function(ts) {
+  df <- data.frame(date=as.Date(as.yearmon(time(ts))), values = melt(ts)$value)
   plot_ly(df, x=~date) %>%
   add_trace(y = ~values, mode = 'lines') %>%
   layout(title = title,
        xaxis = list(title = x.axis),
        yaxis = list(title = y.axis))
 }
-
-plot.serie(df)
-
-#there is clear growing trend but with period of crisis
 ```
+
 ```{r}
-monthplot.serie <- function(df) {
+monthplot.serie <- function(ts) {
+  df <- data.frame(date=as.Date(as.yearmon(time(ts))), values = melt(ts)$value)
   df$month <- factor(month(df$date), levels=1:12, labels=month.abb, ordered=TRUE)
   df$year  <- year(df$date)
   
@@ -56,40 +56,79 @@ monthplot.serie <- function(df) {
       axis.ticks.x=element_blank())
   ggplotly(plot)
 }
-
-monthplot.serie(df)
-
 ```
 
 ```{r}
-#maybe we could start a new dataset from 2007-2008 for better predictions
-
-monthplot(TOTALNSA.ts)
-#saisonnalité
-
+plot.forecast <- function(ts, forecast) {
+  alpha.1 <- 0.05
+  alpha.2 <- 0.20
+  
+  pred        <- forecast$pred
+  se          <- forecast$se
+  df          <- data.frame(date=as.Date(as.yearmon(time(ts))), values.obs = melt(ts)$value)
+  df.forecast <- data.frame(date=as.Date(as.yearmon(time(pred))), values.pred = melt(pred)$value)
+  
+  first.row <- df[nrow(df),]
+  colnames(first.row)[2] <- "values.pred"
+  df.forecast <- rbind(first.row, df.forecast)
+  se <- c(0, se)
+  
+  df.forecast$upper.1 <- df.forecast$values.pred + qnorm(1-alpha.1/2) * se
+  df.forecast$upper.2 <- df.forecast$values.pred + qnorm(1-alpha.2/2) * se
+  df.forecast$lower.1 <- df.forecast$values.pred - qnorm(1-alpha.1/2) * se
+  df.forecast$lower.2 <- df.forecast$values.pred - qnorm(1-alpha.2/2) * se
+  
+  new.df <- merge(x = df, y = df.forecast, by = "date", all = TRUE)
+  
+  plot_ly(new.df) %>%
+  layout(title = title,
+       xaxis = list(title = x.axis),
+       yaxis = list(title = y.axis)) %>%
+  add_lines  (x = ~date, y = ~values.obs,  mode = 'lines', color = I("black"), name = "observation") %>%
+  add_lines  (x = ~date, y = ~values.pred, mode = 'lines', color = I("blue"),  name = "prediction" ) %>%
+  add_ribbons(x = ~date, ymin = ~lower.1, ymax = ~upper.1,
+              color = I("gray95"), name = "95% confidence") %>%
+  add_ribbons(x = ~date, ymin = ~lower.2, ymax = ~upper.2,
+              color = I("gray80"), name = "80% confidence")
+}
 ```
+
+```{r}
+mydata=read.csv("input/TOTALNSA.csv",header=T,dec=".")
+
+TOTALNSA.ts=ts(mydata$TOTALNSA,frequency=12,c(1976,1))
+df <- data.frame(date=as.Date(as.yearmon(time(TOTALNSA.ts))), values = melt(TOTALNSA.ts)$value)
+
+plot.serie(TOTALNSA.ts)
+
+#there is clear growing trend but with period of crisis
+```
+```{r}
+monthplot.serie(TOTALNSA.ts)
+```
+
 
 ```{r}
 y1= diff(TOTALNSA.ts,lag=12)
-plot(y1)
+plot.serie(y1)
 #mauvais
 ```
 
 ```{r}
 y2= diff(log(TOTALNSA.ts),lag=12)
-plot(y2)
+plot.serie(y2)
 #mauvais
 ```
 
 ```{r}
 y3=diff(TOTALNSA.ts)
-plot(y3)
+plot.serie(y3)
 #pas mal
 ```
 
 ```{r}
 y4=diff(diff(TOTALNSA.ts,lag=12))
-plot(y4)
+plot.serie(y4)
 #pas mal aussi
 ```
 
@@ -130,33 +169,35 @@ point.forecast<-myforecast$pred
 SE<-myforecast$se
 lower<-point.forecast-qnorm(0.975)*SE
 upper<-point.forecast+qnorm(0.975)*SE
-plot(TOTALNSA.ts,xlim=c(2000,2019))
-# we adjust the scale of the axes to get a nicer plot
+# plot.serie(TOTALNSA.ts)
+plot(TOTALNSA.ts)
 lines(point.forecast,col="red")
 lines(lower,col="blue")
 lines(upper,col="blue")
+
+plot.forecast(TOTALNSA.ts, myforecast)
 ```
 
 ```{r}
 # We make a subset of the data
 TOTALNSA.ts2 <- window(TOTALNSA.ts,start=c(2010,1))
-plot(TOTALNSA.ts2)
+plot.serie(TOTALNSA.ts2)
 ```
 
 
 ```{r}
-monthplot(TOTALNSA.ts.2)
+monthplot.serie(TOTALNSA.ts2)
 #still clearly seasonlity
 ```
 
 ```{r}
-y1.2=diff(TOTALNSA.ts.2,lag=12)
-plot(y1.2)
+y1.2=diff(TOTALNSA.ts2,lag=12)
+plot.serie(y1.2)
 ```
 
 ```{r}
-y2.2=diff(diff(log(TOTALNSA.ts.2),lag=12))
-plot(y2.2)
+y2.2=diff(diff(log(TOTALNSA.ts2),lag=12))
+plot.serie(y2.2)
 #stationnary
 ```
 
@@ -166,7 +207,7 @@ pacf(y2.2)
 ```
 
 ```{r}
-model1.2<- arima(log(TOTALNSA.ts.2), order = c(0,1,1),seasonal=c(0,1,0))
+model1.2<- arima(log(TOTALNSA.ts2), order = c(0,1,1),seasonal=c(0,1,0))
 model1.2
 acf(model1.2$residuals)
 Box.test(model1.2$residuals, lag = 15, type="Ljung-Box")
@@ -174,7 +215,7 @@ Box.test(model1.2$residuals, lag = 15, type="Ljung-Box")
 ```
 
 ```{r}
-model2.2<- arima(log(TOTALNSA.ts.2), order = c(1,1,1),seasonal=c(0,1,0))
+model2.2<- arima(log(TOTALNSA.ts2), order = c(1,1,1),seasonal=c(0,1,0))
 model2.2
 acf(model2.2$residuals)
 Box.test(model2.2$residuals, lag = 15, type="Ljung-Box")
@@ -182,7 +223,7 @@ Box.test(model2.2$residuals, lag = 15, type="Ljung-Box")
 ```
 
 ```{r}
-model3.2<- arima(log(TOTALNSA.ts.2), order = c(0,1,2),seasonal=c(0,1,0))
+model3.2<- arima(log(TOTALNSA.ts2), order = c(0,1,2),seasonal=c(0,1,0))
 model3.2
 acf(model3.2$residuals)
 Box.test(model3.2$residuals, lag = 15, type="Ljung-Box")
@@ -190,7 +231,7 @@ Box.test(model3.2$residuals, lag = 15, type="Ljung-Box")
 ```
 
 ```{r}
-model4.2<- arima(log(TOTALNSA.ts.2), order = c(1,1,2),seasonal=c(0,1,0))
+model4.2<- arima(log(TOTALNSA.ts2), order = c(1,1,2),seasonal=c(0,1,0))
 model4.2
 acf(model4.2$residuals)
 Box.test(model4.2$residuals, lag = 15, type="Ljung-Box")
@@ -208,7 +249,7 @@ BIC(model2.2)
 ```
 
 ```{r}
-y<-log(TOTALNSA.ts.2)
+y<-log(TOTALNSA.ts2)
 S=round(0.75*length(y))
 h=1
 error1.h<-c()
@@ -240,7 +281,6 @@ MSE2<-mean(abs(error2.h)^2);MSE2
 ```
 
 ```{r}
-library(forecast)
 dm.test(error1.h,error2.h,h=h,power=1)
 # no significant difference between MAE1 and MAE2
 dm.test(error1.h,error2.h,h=h,power=2)
@@ -257,13 +297,10 @@ MAPE2=mean(abs(rerror2.h));MAPE2
 dm.test(rerror1.h,rerror2.h,h=h,power=1)
 ```
 
-
 ```{r}
-plot(diff(diff(log(TOTALNSA.ts2)),lag=12))
+plot.serie(diff(diff(log(TOTALNSA.ts2)),lag=12))
 # Looks stationary
 ```
-
-
 
 ```{r}
 # We make a SARIMA(0,1,1)(0,1,0) on the subset data
@@ -279,9 +316,5 @@ point.forecast<-myforecast$pred
 SE<-myforecast$se
 lower<-point.forecast-qnorm(0.975)*SE
 upper<-point.forecast+qnorm(0.975)*SE
-plot(TOTALNSA.ts2,xlim=c(2010,2021),ylim=c(800,1850))
-# we adjust the scale of the axes to get a nicer plot
-lines(exp(point.forecast),col="red")
-lines(exp(lower),col="blue")
-lines(exp(upper),col="blue")
+plot.serie(TOTALNSA.ts2)
 ```
